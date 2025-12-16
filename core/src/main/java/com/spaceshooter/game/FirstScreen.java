@@ -8,6 +8,7 @@ import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
@@ -27,6 +28,7 @@ public class FirstScreen implements Screen {
     private SpriteBatch batch;
     private BitmapFont font;
     private ShapeRenderer shapes;
+    private GlyphLayout layout;
 
     private PlayerShip playerShip;
     private Rectangle player;
@@ -49,6 +51,7 @@ public class FirstScreen implements Screen {
         batch = new SpriteBatch();
         font = new BitmapFont();
         shapes = new ShapeRenderer();
+        layout = new GlyphLayout();
 
         // Crée le vaisseau joueur (charge la texture si présente) et récupère son rectangle
         playerShip = new PlayerShip(viewport);
@@ -233,7 +236,8 @@ public class FirstScreen implements Screen {
             if (showTouchOverlay && (Gdx.app != null && Gdx.app.getType().name().equalsIgnoreCase("Android"))) {
                 font.draw(batch, "[Gauche] Move", 24, 48);
                 String s = "[Droite] Fire (auto)";
-                font.draw(batch, s, VIRTUAL_WIDTH - 24 - font.getSpaceWidth() * s.length(), 48);
+                layout.setText(font, s);
+                font.draw(batch, s, VIRTUAL_WIDTH - 24 - layout.width, 48);
             }
         }
         batch.end();
