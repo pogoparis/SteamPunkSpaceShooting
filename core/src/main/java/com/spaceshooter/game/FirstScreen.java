@@ -17,8 +17,8 @@ import com.spaceshooter.game.player.PlayerShip;
 
 /** First screen of the application. Displayed after the application is created. */
 public class FirstScreen implements Screen {
-    private static final int VIRTUAL_WIDTH = 1920;
-    private static final int VIRTUAL_HEIGHT = 1080;
+    private static final int VIRTUAL_WIDTH = GameConfig.WORLD_WIDTH;
+    private static final int VIRTUAL_HEIGHT = GameConfig.WORLD_HEIGHT;
 
     private OrthographicCamera camera;
     private FitViewport viewport;
