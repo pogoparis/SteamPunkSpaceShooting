@@ -198,9 +198,20 @@ public class FirstScreen implements Screen {
         enemySpawnTimer += delta;
         if (enemySpawnTimer >= enemySpawnInterval) {
             enemySpawnTimer = 0f;
-            float w = MathUtils.random(100f, 180f);
-            float h = MathUtils.random(60f, 120f);
-            float x = MathUtils.random(0f, viewport.getWorldWidth() - w);
+            float w;
+            float h;
+            if (enemyTexture != null) {
+                float texW = enemyTexture.getWidth();
+                float texH = enemyTexture.getHeight();
+                float aspect = texH / Math.max(1f, texW);
+                w = MathUtils.random(120f, 200f);
+                h = w * aspect;
+            } else {
+                w = MathUtils.random(100f, 180f);
+                h = MathUtils.random(60f, 120f);
+            }
+            float maxX = Math.max(0f, viewport.getWorldWidth() - w);
+            float x = MathUtils.random(0f, maxX);
             Rectangle e = new Rectangle(x, viewport.getWorldHeight() + h, w, h);
             enemies.add(e);
         }
