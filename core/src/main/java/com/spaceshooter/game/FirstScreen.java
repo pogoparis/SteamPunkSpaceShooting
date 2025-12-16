@@ -10,8 +10,10 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
+import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.viewport.FitViewport;
+import com.spaceshooter.game.player.PlayerShip;
 
 /** First screen of the application. Displayed after the application is created. */
 public class FirstScreen implements Screen {
@@ -24,6 +26,7 @@ public class FirstScreen implements Screen {
     private BitmapFont font;
     private ShapeRenderer shapes;
 
+    private PlayerShip playerShip;
     private Rectangle player;
     private Array<Rectangle> bullets;
     private Array<Rectangle> enemies;
@@ -42,7 +45,9 @@ public class FirstScreen implements Screen {
         font = new BitmapFont();
         shapes = new ShapeRenderer();
 
-        player = new Rectangle(VIRTUAL_WIDTH * 0.5f - 70, 120, 140, 140);
+        // Crée le vaisseau joueur (charge la texture si présente) et récupère son rectangle
+        playerShip = new PlayerShip(viewport);
+        player = playerShip.getBounds();
         bullets = new Array<>();
         enemies = new Array<>();
     }
@@ -68,20 +73,27 @@ public class FirstScreen implements Screen {
         if (batch != null) batch.dispose();
         if (font != null) font.dispose();
         if (shapes != null) shapes.dispose();
+        if (playerShip != null) playerShip.dispose();
     }
 
     private void updateSimulation(float delta) {
-        float moveSpeed = 800f * delta;
-        if (Gdx.input.isTouched()) {
-            float targetX = Gdx.input.getX() / (float) Gdx.graphics.getWidth() * viewport.getWorldWidth();
-            float center = player.x + player.width * 0.5f;
-            player.x += Math.signum(targetX - center) * moveSpeed;
-        }
+        // Suivi rapide de la souris / touch, sur X et Y
+        // Conversion écran -> monde
+        Vector2 target = new Vector2(Gdx.input.getX(), Gdx.input.getY());
+        viewport.unproject(target);
+
+        // Coller parfaitement à la souris/touch
+        player.setCenter(target.x, target.y);
+
+        // Garde dans les limites
         player.x = MathUtils.clamp(player.x, 0, viewport.getWorldWidth() - player.width);
+        player.y = MathUtils.clamp(player.y, 0, viewport.getWorldHeight() - player.height);
 
         fireCooldown -= delta;
         if (Gdx.input.isTouched() && fireCooldown <= 0f) {
-            Rectangle b = new Rectangle(player.x + player.width * 0.5f - 8, player.y + player.height - 6, 16, 34);
+            Rectangle b = new Rectangle(player.x + player.width * 0.5f - 8,
+                    player.y + player.height - 6,
+                    16, 34);
             bullets.add(b);
             fireCooldown = fireRate;
         }
@@ -141,8 +153,11 @@ public class FirstScreen implements Screen {
         viewport.apply();
         shapes.setProjectionMatrix(camera.combined);
         shapes.begin(ShapeRenderer.ShapeType.Filled);
-        shapes.setColor(new Color(0.93f, 0.69f, 0.22f, 1f));
-        shapes.rect(player.x, player.y, player.width, player.height);
+        // Le joueur est dessiné avec une texture ci-dessous; on ne dessine le rect que si la texture n'est pas trouvée
+        if (!playerShip.hasTexture()) {
+            shapes.setColor(new Color(0.93f, 0.69f, 0.22f, 1f));
+            shapes.rect(player.x, player.y, player.width, player.height);
+        }
         shapes.setColor(new Color(1f, 0.88f, 0.35f, 1f));
         for (Rectangle b : bullets) shapes.rect(b.x, b.y, b.width, b.height);
         shapes.setColor(new Color(0.55f, 0.55f, 0.60f, 1f));
@@ -151,6 +166,8 @@ public class FirstScreen implements Screen {
 
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
+        // Dessine le vaisseau si disponible, par-dessus le décor
+        playerShip.render(batch);
         font.setColor(Color.GOLD);
         font.getData().setScale(1.5f);
         font.draw(batch, "Score: " + score, 24, VIRTUAL_HEIGHT - 24);
