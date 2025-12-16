@@ -14,9 +14,10 @@ import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Array;
-import com.badlogic.gdx.utils.viewport.FitViewport;
+import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import com.spaceshooter.game.player.PlayerShip;
 import com.spaceshooter.game.input.InputService;
+import com.spaceshooter.game.background.ScrollingBackground;
 
 /** First screen of the application. Displayed after the application is created. */
 public class FirstScreen implements Screen {
@@ -24,7 +25,7 @@ public class FirstScreen implements Screen {
     private static final int VIRTUAL_HEIGHT = GameConfig.WORLD_HEIGHT;
 
     private OrthographicCamera camera;
-    private FitViewport viewport;
+    private ExtendViewport viewport;
     private SpriteBatch batch;
     private BitmapFont font;
     private ShapeRenderer shapes;
@@ -43,11 +44,12 @@ public class FirstScreen implements Screen {
     private int score = 0;
     private boolean showHud = true;
     private boolean showTouchOverlay = true;
+    private ScrollingBackground background;
 
     @Override
     public void show() {
         camera = new OrthographicCamera();
-        viewport = new FitViewport(VIRTUAL_WIDTH, VIRTUAL_HEIGHT, camera);
+        viewport = new ExtendViewport(VIRTUAL_WIDTH, VIRTUAL_HEIGHT, camera);
         batch = new SpriteBatch();
         font = new BitmapFont();
         shapes = new ShapeRenderer();
@@ -59,6 +61,8 @@ public class FirstScreen implements Screen {
         shipTargetWidth = GameConfig.SHIP_TARGET_DRAW_WIDTH;
         bullets = new Array<>();
         enemies = new Array<>();
+        // Fond défilant évolutif
+        background = new ScrollingBackground(viewport);
     }
 
     @Override
@@ -71,6 +75,8 @@ public class FirstScreen implements Screen {
     public void resize(int width, int height) {
         if(width <= 0 || height <= 0) return;
         viewport.update(width, height, true);
+        // Recrée le fond pour s'adapter à la nouvelle taille étendue
+        background = new ScrollingBackground(viewport);
     }
 
     @Override public void pause() {}
@@ -86,6 +92,8 @@ public class FirstScreen implements Screen {
     }
 
     private void updateSimulation(float delta) {
+        // Background évolutif
+        if (background != null) background.update(delta);
         // Toggle HUD visibility
         if (Gdx.input.isKeyJustPressed(Input.Keys.H)) {
             showHud = !showHud;
@@ -198,6 +206,8 @@ public class FirstScreen implements Screen {
         viewport.apply();
         shapes.setProjectionMatrix(camera.combined);
         shapes.begin(ShapeRenderer.ShapeType.Filled);
+        // Dessine le fond défilant
+        if (background != null) background.render(shapes);
         // Le joueur est dessiné avec une texture ci-dessous; on ne dessine le rect que si la texture n'est pas trouvée
         if (!playerShip.hasTexture()) {
             shapes.setColor(new Color(0.93f, 0.69f, 0.22f, 1f));

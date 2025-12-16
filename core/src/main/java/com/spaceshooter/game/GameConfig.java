@@ -24,5 +24,7 @@ public final class GameConfig {
     // Assets (chemins relatifs au dossier assets/)
     public static final class Assets {
         public static final String SHIP_1 = "Starships/vaisseau_1.png";
+        public static final String BG_LAYER_1 = "Background/layer1.png"; // optionnel
+        public static final String BG_LAYER_2 = "Background/layer2.png"; // optionnel
     }
 }
