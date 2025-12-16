@@ -18,6 +18,7 @@ import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import com.spaceshooter.game.player.PlayerShip;
 import com.spaceshooter.game.input.InputService;
 import com.spaceshooter.game.background.ScrollingBackground;
+import com.spaceshooter.game.background.TexturedParallaxBackground;
 
 /** First screen of the application. Displayed after the application is created. */
 public class FirstScreen implements Screen {
@@ -45,6 +46,7 @@ public class FirstScreen implements Screen {
     private boolean showHud = true;
     private boolean showTouchOverlay = true;
     private ScrollingBackground background;
+    private TexturedParallaxBackground parallax;
 
     @Override
     public void show() {
@@ -63,6 +65,8 @@ public class FirstScreen implements Screen {
         enemies = new Array<>();
         // Fond défilant évolutif
         background = new ScrollingBackground(viewport);
+        // Parallaxe texturée (optionnelle si assets présents)
+        parallax = new TexturedParallaxBackground(viewport);
     }
 
     @Override
@@ -77,6 +81,8 @@ public class FirstScreen implements Screen {
         viewport.update(width, height, true);
         // Recrée le fond pour s'adapter à la nouvelle taille étendue
         background = new ScrollingBackground(viewport);
+        // Recrée la parallaxe texturée pour matcher la nouvelle taille
+        parallax = new TexturedParallaxBackground(viewport);
     }
 
     @Override public void pause() {}
@@ -94,6 +100,7 @@ public class FirstScreen implements Screen {
     private void updateSimulation(float delta) {
         // Background évolutif
         if (background != null) background.update(delta);
+        if (parallax != null) parallax.update(delta);
         // Toggle HUD visibility
         if (Gdx.input.isKeyJustPressed(Input.Keys.H)) {
             showHud = !showHud;
@@ -205,10 +212,21 @@ public class FirstScreen implements Screen {
 
         viewport.apply();
         shapes.setProjectionMatrix(camera.combined);
+        // Pass 1: starfield en arrière-plan (shapes)
         shapes.begin(ShapeRenderer.ShapeType.Filled);
-        // Dessine le fond défilant
         if (background != null) background.render(shapes);
-        // Le joueur est dessiné avec une texture ci-dessous; on ne dessine le rect que si la texture n'est pas trouvée
+        shapes.end();
+
+        // Pass 2: couches de parallaxe texturées (batch)
+        batch.setProjectionMatrix(camera.combined);
+        batch.begin();
+        if (parallax != null && parallax.hasAnyLayer()) {
+            parallax.render(batch);
+        }
+        batch.end();
+
+        // Pass 3: entités vectorielles (shapes): fallback joueur, bullets, ennemis, overlay
+        shapes.begin(ShapeRenderer.ShapeType.Filled);
         if (!playerShip.hasTexture()) {
             shapes.setColor(new Color(0.93f, 0.69f, 0.22f, 1f));
             shapes.rect(player.x, player.y, player.width, player.height);
@@ -223,18 +241,16 @@ public class FirstScreen implements Screen {
             float w = viewport.getWorldWidth();
             float h = viewport.getWorldHeight();
             float zoneH = h * 0.22f;
-            // Zone gauche (mouvement indicatif)
             shapes.setColor(0f, 0.7f, 1f, 0.12f);
             shapes.rect(0, 0, w * 0.5f, zoneH);
-            // Zone droite (tir indicatif)
             shapes.setColor(1f, 0.4f, 0f, 0.12f);
             shapes.rect(w * 0.5f, 0, w * 0.5f, zoneH);
         }
         shapes.end();
 
+        // Pass 4: sprites (batch): vaisseau + HUD
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
-        // Dessine le vaisseau si disponible, par-dessus le décor
         playerShip.render(batch);
         if (showHud) {
             font.setColor(Color.GOLD);

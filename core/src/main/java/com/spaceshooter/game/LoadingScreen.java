@@ -9,6 +9,7 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.utils.viewport.FitViewport;
+import com.badlogic.gdx.files.FileHandle;
 import com.spaceshooter.game.assets.AssetService;
 
 public class LoadingScreen implements Screen {
@@ -34,6 +35,11 @@ public class LoadingScreen implements Screen {
         // Queue assets to load
         AssetService assets = AssetService.get();
         assets.loadTexture(GameConfig.Assets.SHIP_1);
+        // Optionally queue parallax layers if present on disk
+        FileHandle l1 = Gdx.files.internal(GameConfig.Assets.BG_LAYER_1);
+        if (l1.exists()) assets.loadTexture(GameConfig.Assets.BG_LAYER_1);
+        FileHandle l2 = Gdx.files.internal(GameConfig.Assets.BG_LAYER_2);
+        if (l2.exists()) assets.loadTexture(GameConfig.Assets.BG_LAYER_2);
     }
 
     @Override
