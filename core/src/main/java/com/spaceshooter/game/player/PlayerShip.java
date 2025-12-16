@@ -27,8 +27,21 @@ public class PlayerShip {
     }
 
     public void render(SpriteBatch batch) {
+        render(batch, 0f);
+    }
+
+    public void render(SpriteBatch batch, float rotationDeg) {
         if (texture == null) return;
-        batch.draw(texture, bounds.x, bounds.y, bounds.width, bounds.height);
+        float ox = bounds.width * 0.5f;
+        float oy = bounds.height * 0.5f;
+        batch.draw(texture,
+                bounds.x, bounds.y,
+                ox, oy,
+                bounds.width, bounds.height,
+                1f, 1f,
+                rotationDeg,
+                0, 0, texture.getWidth(), texture.getHeight(),
+                false, false);
     }
 
     public boolean hasTexture() { return texture != null; }

@@ -6,6 +6,7 @@ import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
@@ -19,6 +20,7 @@ import com.spaceshooter.game.player.PlayerShip;
 import com.spaceshooter.game.input.InputService;
 import com.spaceshooter.game.background.ScrollingBackground;
 import com.spaceshooter.game.background.TexturedParallaxBackground;
+import com.spaceshooter.game.assets.AssetService;
 
 /** First screen of the application. Displayed after the application is created. */
 public class FirstScreen implements Screen {
@@ -47,6 +49,10 @@ public class FirstScreen implements Screen {
     private boolean showTouchOverlay = true;
     private ScrollingBackground background;
     private TexturedParallaxBackground parallax;
+    private float prevCenterX;
+    private float prevCenterY;
+    private float tiltAngleDeg;
+    private Texture enemyTexture;
 
     @Override
     public void show() {
@@ -67,6 +73,16 @@ public class FirstScreen implements Screen {
         background = new ScrollingBackground(viewport);
         // Parallaxe texturée (optionnelle si assets présents)
         parallax = new TexturedParallaxBackground(viewport);
+        // Init historique pour le calcul de vitesse et tilt
+        prevCenterX = player.x + player.width * 0.5f;
+        prevCenterY = player.y + player.height * 0.5f;
+        tiltAngleDeg = 0f;
+        // Charge texture ennemi si disponible
+        if (Gdx.files.internal(GameConfig.Assets.ENEMY_1).exists()) {
+            enemyTexture = AssetService.get().getTexture(GameConfig.Assets.ENEMY_1);
+        } else {
+            enemyTexture = null;
+        }
     }
 
     @Override
@@ -115,6 +131,18 @@ public class FirstScreen implements Screen {
         player.x = MathUtils.clamp(player.x, 0, viewport.getWorldWidth() - player.width);
         player.y = MathUtils.clamp(player.y, 0, viewport.getWorldHeight() - player.height);
 
+        // Calcul vitesse et tilt
+        float centerX = player.x + player.width * 0.5f;
+        float centerY = player.y + player.height * 0.5f;
+        float vx = (centerX - prevCenterX) / Math.max(1e-4f, delta);
+        float vy = (centerY - prevCenterY) / Math.max(1e-4f, delta);
+        float maxAngle = 18f;
+        float vxNorm = MathUtils.clamp(vx / 900f, -1f, 1f);
+        float desiredTilt = vxNorm * maxAngle; // droite => angle positif
+        tiltAngleDeg = MathUtils.lerp(tiltAngleDeg, desiredTilt, 0.15f);
+        prevCenterX = centerX;
+        prevCenterY = centerY;
+
         // Debug Tuning: ajuster la largeur cible du vaisseau en jeu (+ / -)
         boolean inc = Gdx.input.isKeyJustPressed(Input.Keys.PLUS)
                 || Gdx.input.isKeyJustPressed(Input.Keys.EQUALS)
@@ -149,6 +177,9 @@ public class FirstScreen implements Screen {
             // Si aucune zone tactile match (ex: Desktop), alors tout touch/click déclenche
             if (!fireRequested) fireRequested = true;
         }
+        // Auto-fire quand le vaisseau est en mouvement (seuil de vitesse)
+        float speed = (float)Math.sqrt(vx * vx + vy * vy);
+        if (speed > 80f) fireRequested = true;
         if (fireRequested && fireCooldown <= 0f) {
             Rectangle b = new Rectangle(
                     player.x + player.width * 0.5f - GameConfig.BULLET_WIDTH * 0.5f,
@@ -233,8 +264,10 @@ public class FirstScreen implements Screen {
         }
         shapes.setColor(new Color(1f, 0.88f, 0.35f, 1f));
         for (Rectangle b : bullets) shapes.rect(b.x, b.y, b.width, b.height);
-        shapes.setColor(new Color(0.55f, 0.55f, 0.60f, 1f));
-        for (Rectangle e : enemies) shapes.rect(e.x, e.y, e.width, e.height);
+        if (enemyTexture == null) {
+            shapes.setColor(new Color(0.55f, 0.55f, 0.60f, 1f));
+            for (Rectangle e : enemies) shapes.rect(e.x, e.y, e.width, e.height);
+        }
 
         // Overlay tactile Android (visuel zones)
         if (showTouchOverlay && (Gdx.app != null && Gdx.app.getType().name().equalsIgnoreCase("Android"))) {
@@ -251,7 +284,13 @@ public class FirstScreen implements Screen {
         // Pass 4: sprites (batch): vaisseau + HUD
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
-        playerShip.render(batch);
+        // Ennemis texturés si dispo
+        if (enemyTexture != null) {
+            for (Rectangle e : enemies) {
+                batch.draw(enemyTexture, e.x, e.y, e.width, e.height);
+            }
+        }
+        playerShip.render(batch, tiltAngleDeg);
         if (showHud) {
             font.setColor(Color.GOLD);
             font.getData().setScale(1.5f);

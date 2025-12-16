@@ -40,6 +40,9 @@ public class LoadingScreen implements Screen {
         if (l1.exists()) assets.loadTexture(GameConfig.Assets.BG_LAYER_1);
         FileHandle l2 = Gdx.files.internal(GameConfig.Assets.BG_LAYER_2);
         if (l2.exists()) assets.loadTexture(GameConfig.Assets.BG_LAYER_2);
+        // Optionally queue enemy texture
+        FileHandle e1 = Gdx.files.internal(GameConfig.Assets.ENEMY_1);
+        if (e1.exists()) assets.loadTexture(GameConfig.Assets.ENEMY_1);
     }
 
     @Override
