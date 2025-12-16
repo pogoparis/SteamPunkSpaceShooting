@@ -4,9 +4,9 @@ package com.spaceshooter.game;
 public final class GameConfig {
     private GameConfig() {}
 
-    // Monde logique (utilisé par le FitViewport)
-    public static final int WORLD_WIDTH = 1920;
-    public static final int WORLD_HEIGHT = 1080;
+    // Monde logique (utilisé par le FitViewport) - Portrait
+    public static final int WORLD_WIDTH = 1080;
+    public static final int WORLD_HEIGHT = 1920;
 
     // Joueur / Vaisseau
     public static final float SHIP_TARGET_DRAW_WIDTH = 256f; // largeur cible en pixels; hauteur suit le ratio

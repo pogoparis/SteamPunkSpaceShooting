@@ -1,6 +1,7 @@
 package com.spaceshooter.game;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
@@ -14,6 +15,7 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.spaceshooter.game.player.PlayerShip;
+import com.spaceshooter.game.input.InputService;
 
 /** First screen of the application. Displayed after the application is created. */
 public class FirstScreen implements Screen {
@@ -28,12 +30,13 @@ public class FirstScreen implements Screen {
 
     private PlayerShip playerShip;
     private Rectangle player;
+    private float shipTargetWidth;
     private Array<Rectangle> bullets;
     private Array<Rectangle> enemies;
     private float enemySpawnTimer;
-    private float enemySpawnInterval = 1.1f;
+    private float enemySpawnInterval = GameConfig.ENEMY_SPAWN_INTERVAL;
     private float fireCooldown;
-    private float fireRate = 0.18f;
+    private float fireRate = GameConfig.FIRE_RATE_SECONDS;
     private float health = 1f;
     private int score = 0;
 
@@ -48,6 +51,7 @@ public class FirstScreen implements Screen {
         // Crée le vaisseau joueur (charge la texture si présente) et récupère son rectangle
         playerShip = new PlayerShip(viewport);
         player = playerShip.getBounds();
+        shipTargetWidth = GameConfig.SHIP_TARGET_DRAW_WIDTH;
         bullets = new Array<>();
         enemies = new Array<>();
     }
@@ -77,10 +81,8 @@ public class FirstScreen implements Screen {
     }
 
     private void updateSimulation(float delta) {
-        // Suivi rapide de la souris / touch, sur X et Y
-        // Conversion écran -> monde
-        Vector2 target = new Vector2(Gdx.input.getX(), Gdx.input.getY());
-        viewport.unproject(target);
+        // Suivi instantané de la souris / touch, sur X et Y
+        Vector2 target = InputService.getWorldCursor(viewport);
 
         // Coller parfaitement à la souris/touch
         player.setCenter(target.x, target.y);
@@ -89,18 +91,32 @@ public class FirstScreen implements Screen {
         player.x = MathUtils.clamp(player.x, 0, viewport.getWorldWidth() - player.width);
         player.y = MathUtils.clamp(player.y, 0, viewport.getWorldHeight() - player.height);
 
+        // Debug Tuning: ajuster la largeur cible du vaisseau en jeu (+ / -)
+        boolean inc = Gdx.input.isKeyJustPressed(Input.Keys.PLUS)
+                || Gdx.input.isKeyJustPressed(Input.Keys.EQUALS)
+                || Gdx.input.isKeyJustPressed(Input.Keys.NUMPAD_ADD);
+        boolean dec = Gdx.input.isKeyJustPressed(Input.Keys.MINUS)
+                || Gdx.input.isKeyJustPressed(Input.Keys.NUMPAD_SUBTRACT);
+        if (inc || dec) {
+            float step = 16f;
+            shipTargetWidth += inc ? step : -step;
+            shipTargetWidth = MathUtils.clamp(shipTargetWidth, 96f, 512f);
+            playerShip.resizeToWidth(shipTargetWidth);
+        }
+
         fireCooldown -= delta;
         if (Gdx.input.isTouched() && fireCooldown <= 0f) {
-            Rectangle b = new Rectangle(player.x + player.width * 0.5f - 8,
+            Rectangle b = new Rectangle(
+                    player.x + player.width * 0.5f - GameConfig.BULLET_WIDTH * 0.5f,
                     player.y + player.height - 6,
-                    16, 34);
+                    GameConfig.BULLET_WIDTH, GameConfig.BULLET_HEIGHT);
             bullets.add(b);
             fireCooldown = fireRate;
         }
 
         for (int i = bullets.size - 1; i >= 0; i--) {
             Rectangle b = bullets.get(i);
-            b.y += 950f * delta;
+            b.y += GameConfig.BULLET_SPEED * delta;
             if (b.y > viewport.getWorldHeight()) bullets.removeIndex(i);
         }
 
@@ -116,7 +132,7 @@ public class FirstScreen implements Screen {
 
         for (int i = enemies.size - 1; i >= 0; i--) {
             Rectangle e = enemies.get(i);
-            e.y -= 260f * delta;
+            e.y -= GameConfig.ENEMY_SPEED * delta;
             if (e.y + e.height < 0) enemies.removeIndex(i);
         }
 
@@ -172,6 +188,8 @@ public class FirstScreen implements Screen {
         font.getData().setScale(1.5f);
         font.draw(batch, "Score: " + score, 24, VIRTUAL_HEIGHT - 24);
         font.draw(batch, "HP: " + (int)(health * 100) + "%", 24, VIRTUAL_HEIGHT - 64);
+        font.getData().setScale(1.0f);
+        font.draw(batch, "ShipW: " + (int)shipTargetWidth + "  [+/-]", 24, VIRTUAL_HEIGHT - 104);
         batch.end();
     }
 }
