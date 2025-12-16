@@ -39,6 +39,7 @@ public class FirstScreen implements Screen {
     private float fireRate = GameConfig.FIRE_RATE_SECONDS;
     private float health = 1f;
     private int score = 0;
+    private boolean showHud = true;
 
     @Override
     public void show() {
@@ -81,6 +82,10 @@ public class FirstScreen implements Screen {
     }
 
     private void updateSimulation(float delta) {
+        // Toggle HUD visibility
+        if (Gdx.input.isKeyJustPressed(Input.Keys.H)) {
+            showHud = !showHud;
+        }
         // Suivi instantané de la souris / touch, sur X et Y
         Vector2 target = InputService.getWorldCursor(viewport);
 
@@ -184,12 +189,14 @@ public class FirstScreen implements Screen {
         batch.begin();
         // Dessine le vaisseau si disponible, par-dessus le décor
         playerShip.render(batch);
-        font.setColor(Color.GOLD);
-        font.getData().setScale(1.5f);
-        font.draw(batch, "Score: " + score, 24, VIRTUAL_HEIGHT - 24);
-        font.draw(batch, "HP: " + (int)(health * 100) + "%", 24, VIRTUAL_HEIGHT - 64);
-        font.getData().setScale(1.0f);
-        font.draw(batch, "ShipW: " + (int)shipTargetWidth + "  [+/-]", 24, VIRTUAL_HEIGHT - 104);
+        if (showHud) {
+            font.setColor(Color.GOLD);
+            font.getData().setScale(1.5f);
+            font.draw(batch, "Score: " + score, 24, VIRTUAL_HEIGHT - 24);
+            font.draw(batch, "HP: " + (int)(health * 100) + "%", 24, VIRTUAL_HEIGHT - 64);
+            font.getData().setScale(1.0f);
+            font.draw(batch, "ShipW: " + (int)shipTargetWidth + "  [+/-]  [H] HUD", 24, VIRTUAL_HEIGHT - 104);
+        }
         batch.end();
     }
 }

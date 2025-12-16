@@ -30,6 +30,24 @@ public final class AssetService implements Disposable {
         return manager.get(path, Texture.class);
     }
 
+    public void loadTexture(String path) {
+        if (!manager.isLoaded(path, Texture.class)) {
+            manager.load(path, Texture.class);
+        }
+    }
+
+    public boolean update() {
+        return manager.update();
+    }
+
+    public float getProgress() {
+        return manager.getProgress();
+    }
+
+    public void finishLoading() {
+        manager.finishLoading();
+    }
+
     @Override
     public void dispose() {
         manager.dispose();
