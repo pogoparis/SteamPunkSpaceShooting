@@ -40,6 +40,7 @@ public class FirstScreen implements Screen {
     private float health = 1f;
     private int score = 0;
     private boolean showHud = true;
+    private boolean showTouchOverlay = true;
 
     @Override
     public void show() {
@@ -110,7 +111,27 @@ public class FirstScreen implements Screen {
         }
 
         fireCooldown -= delta;
-        if (Gdx.input.isTouched() && fireCooldown <= 0f) {
+        boolean fireRequested = false;
+        // Multi-touch Android: tir si un doigt est dans la zone droite basse; Desktop: tir si clic maintenu
+        if (Gdx.input.isTouched()) {
+            float worldW = viewport.getWorldWidth();
+            float worldH = viewport.getWorldHeight();
+            float zoneH = worldH * 0.22f;
+            int pointers = 10; // plupart des devices < 10
+            for (int i = 0; i < pointers; i++) {
+                if (!Gdx.input.isTouched(i)) continue;
+                Vector2 tp = new Vector2(Gdx.input.getX(i), Gdx.input.getY(i));
+                viewport.unproject(tp);
+                // Zone droite basse pour tir
+                if (tp.y <= zoneH && tp.x >= worldW * 0.5f) {
+                    fireRequested = true;
+                    break;
+                }
+            }
+            // Si aucune zone tactile match (ex: Desktop), alors tout touch/click déclenche
+            if (!fireRequested) fireRequested = true;
+        }
+        if (fireRequested && fireCooldown <= 0f) {
             Rectangle b = new Rectangle(
                     player.x + player.width * 0.5f - GameConfig.BULLET_WIDTH * 0.5f,
                     player.y + player.height - 6,
@@ -183,6 +204,19 @@ public class FirstScreen implements Screen {
         for (Rectangle b : bullets) shapes.rect(b.x, b.y, b.width, b.height);
         shapes.setColor(new Color(0.55f, 0.55f, 0.60f, 1f));
         for (Rectangle e : enemies) shapes.rect(e.x, e.y, e.width, e.height);
+
+        // Overlay tactile Android (visuel zones)
+        if (showTouchOverlay && (Gdx.app != null && Gdx.app.getType().name().equalsIgnoreCase("Android"))) {
+            float w = viewport.getWorldWidth();
+            float h = viewport.getWorldHeight();
+            float zoneH = h * 0.22f;
+            // Zone gauche (mouvement indicatif)
+            shapes.setColor(0f, 0.7f, 1f, 0.12f);
+            shapes.rect(0, 0, w * 0.5f, zoneH);
+            // Zone droite (tir indicatif)
+            shapes.setColor(1f, 0.4f, 0f, 0.12f);
+            shapes.rect(w * 0.5f, 0, w * 0.5f, zoneH);
+        }
         shapes.end();
 
         batch.setProjectionMatrix(camera.combined);
@@ -196,6 +230,11 @@ public class FirstScreen implements Screen {
             font.draw(batch, "HP: " + (int)(health * 100) + "%", 24, VIRTUAL_HEIGHT - 64);
             font.getData().setScale(1.0f);
             font.draw(batch, "ShipW: " + (int)shipTargetWidth + "  [+/-]  [H] HUD", 24, VIRTUAL_HEIGHT - 104);
+            if (showTouchOverlay && (Gdx.app != null && Gdx.app.getType().name().equalsIgnoreCase("Android"))) {
+                font.draw(batch, "[Gauche] Move", 24, 48);
+                String s = "[Droite] Fire (auto)";
+                font.draw(batch, s, VIRTUAL_WIDTH - 24 - font.getSpaceWidth() * s.length(), 48);
+            }
         }
         batch.end();
     }
